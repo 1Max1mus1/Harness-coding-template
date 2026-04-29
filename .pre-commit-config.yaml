@@ -1,0 +1,42 @@
+repos:
+  - repo: local
+    hooks:
+      - id: architecture-check
+        name: Architecture constraints
+        entry: python lints/check_architecture.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: no-print-statements
+        name: No bare print() in src/
+        entry: python lints/check_no_print.py
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: update-agents-md
+        name: Sync AGENTS.md navigation
+        entry: python scripts/gc_update_agents_md.py
+        language: system
+        pass_filenames: false
+        files: ^docs/
+
+  # Standard community hooks — uncomment as needed
+  # - repo: https://github.com/pre-commit/pre-commit-hooks
+  #   rev: v4.6.0
+  #   hooks:
+  #     - id: trailing-whitespace
+  #     - id: end-of-file-fixer
+  #     - id: check-yaml
+  #     - id: check-json
+  #     - id: check-merge-conflict
+
+  # Python type checking — uncomment if using mypy
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.10.0
+  #   hooks:
+  #     - id: mypy
+  #       args: [--ignore-missing-imports]
+
+# Install: pip install pre-commit && pre-commit install

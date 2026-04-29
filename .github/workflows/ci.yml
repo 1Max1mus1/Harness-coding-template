@@ -1,0 +1,112 @@
+name: Harness CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Layer 1: Constraint checks (<30s) ─────────────────────────────────────
+  constraints:
+    name: Architecture & Lint Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for git diff in ai_review.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run all lints
+        run: python lints/check_all.py
+
+  # ── Layer 2: Unit tests (<2min) ───────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: constraints
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest src/tests/unit/ -v --tb=short
+
+  # ── Layer 3: Integration tests (<5min) ────────────────────────────────────
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run integration tests
+        run: pytest src/tests/integration/ -v --tb=short
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ── Layer 4: AI Architecture Review (async, non-blocking) ─────────────────
+  ai-review:
+    name: AI Architecture Review
+    runs-on: ubuntu-latest
+    needs: constraints
+    # Only runs on PRs, not on direct pushes to main
+    if: github.event_name == 'pull_request'
+    continue-on-error: true  # Does not block merge; use required status checks for hard blocks
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install anthropic
+        run: pip install anthropic
+
+      - name: Run AI architecture review
+        run: python lints/ai_review.py --base-branch origin/main
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  # ── Post-deploy: Smoke tests (runs after deployment) ──────────────────────
+  # Uncomment and adapt this job when you add a deployment step above it.
+  #
+  # smoke-tests:
+  #   name: Smoke Tests
+  #   runs-on: ubuntu-latest
+  #   needs: deploy          # <-- your deploy job name
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #     - run: pip install httpx
+  #     - name: Run smoke tests
+  #       run: python scripts/smoke_test.py
+  #       env:
+  #         DEPLOYMENT_URL: ${{ secrets.DEPLOYMENT_URL }}

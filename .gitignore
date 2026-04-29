@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Metrics data (optional — remove this line if you want to track metrics in git)
+metrics/*.jsonl
+
+# Dead code cleanup list (auto-generated)
+CLEANUP_NEEDED.md
+
+# OS
+.DS_Store
+Thumbs.db
