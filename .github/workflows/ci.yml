@@ -39,10 +39,20 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No requirements.txt found — skipping install (template repo)"
+          fi
 
       - name: Run unit tests
-        run: pytest src/tests/unit/ -v --tb=short
+        run: |
+          if [ -d src/tests/unit ]; then
+            pytest src/tests/unit/ -v --tb=short
+          else
+            echo "No src/tests/unit/ found — skipping (add tests when you start building)"
+          fi
 
   # ── Layer 3: Integration tests (<5min) ────────────────────────────────────
   integration-tests:
@@ -59,10 +69,20 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No requirements.txt found — skipping install (template repo)"
+          fi
 
       - name: Run integration tests
-        run: pytest src/tests/integration/ -v --tb=short
+        run: |
+          if [ -d src/tests/integration ]; then
+            pytest src/tests/integration/ -v --tb=short
+          else
+            echo "No src/tests/integration/ found — skipping (add tests when you start building)"
+          fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
